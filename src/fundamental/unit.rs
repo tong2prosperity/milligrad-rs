@@ -1,49 +1,93 @@
-use std::cell::{Ref, RefCell};
+
 use std::ops::{Add, Mul, Sub, Div};
-use std::rc::{Rc, Weak};
+use super::*;
 use std::collections::HashMap;
+use std::fmt;
+use std::hash::{Hash, Hasher};
 
-
-
-#[derive(Clone)]
-enum Operation {
+#[derive(Clone, Debug)]
+pub(crate) enum Operation {
     Add(UnitRef, UnitRef),
+    Mul(UnitRef, UnitRef),
     //Sub,
-    //Mul,
     //Div,
+    Tanh(UnitRef),
+    ReLU(UnitRef),
+}
+
+
+impl fmt::Display for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Operation::Add(_, _) => write!(f, "Add"),
+            Operation::Mul(_, _) => write!(f, "Mul"),
+            Operation::Tanh(_) => write!(f, "Tanh"),
+            Operation::ReLU(_) => write!(f, "ReLU"),
+        }
+    }
 }
 
 #[derive(Clone)]
-struct _Unit {
+pub struct _Unit {
+    _id: usize,
     pub data: f32,
     pub grad: f32,
-    operation: Option<Operation>,
+    pub operation: Option<Operation>,
+    //back_propagation_fn: Option<fn(&Self)>,
+    pub children: Vec<Unit>,
 }
 
-impl PartialEq<Self> for _Unit {
-    fn eq(&self, other: &Self) -> bool {
-        self.data == other.data
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.eq(other)
+impl Eq for _Unit{}
+impl PartialEq for _Unit {
+    fn eq(&self, other: &_Unit) -> bool {
+        self._id == other._id
     }
 }
 
 
+impl Hash for _Unit {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self._id.hash(state);
+    }
+}
 
-pub type Unit = Rc<RefCell<_Unit>>;
-pub type UnitRef = Weak<RefCell<_Unit>>;
+impl fmt::Debug for _Unit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Unit {{ data: {}, grad: {}, operation: {:?}, children_size: {} }}",
+               self.data, self.grad, self.operation, self.children.len())
+    }
+
+}
+
+impl fmt::Display for _Unit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Unit {{ data: {}, grad: {}, operation: {:?}}}",
+               self.data, self.grad, self.operation)
+    }
+}
+
+
+pub fn new_unit(data: f32) -> Unit {
+    Rc::new(RefCell::new(_Unit {
+        _id: rand::random(),
+        data,
+        grad: 0.0,
+        operation: None,
+        children: vec![],
+    }))
+}
+
 
 impl _Unit {
 
     pub fn new(data: f32) -> _Unit {
         _Unit {
+            _id: rand::random(),
             data,
             grad: 0.0,
             operation: None,
             //back_propagation_fn: None,
-      //      children: None,
+            children: vec![],
         }
     }
 
@@ -51,34 +95,46 @@ impl _Unit {
         Rc::new(RefCell::new(self.clone()))
     }
 
-    pub fn to_unit_ref(&self) -> UnitRef {
-        Rc::downgrade(&self.to_unit())
+    pub fn id(&self) -> usize {
+        self._id
     }
 
-    pub fn new_rc(data: f32) -> Unit {
-        Rc::new(RefCell::new(_Unit {
-            data,
-            grad: 0.0,
-            operation: None,
-    //        children: None,
-        }))
-    }
-
-
-    pub fn back_propagation(&self) {
+    pub fn self_back_propagation(&mut self) {
         match self.operation {
-            Some(Operation::Add(ref a, ref b)) => {
-                let a = a.upgrade().unwrap();
-                let b = b.upgrade().unwrap();
-                a.borrow_mut().grad += self.grad;
-                b.borrow_mut().grad += self.grad;
+            Some(ref op) => {
+                match op {
+                    Operation::Add(ref a, ref b) => {
+                        let a = a.upgrade().unwrap();
+                        let b = b.upgrade().unwrap();
+                        a.borrow_mut().grad += self.grad;
+                        b.borrow_mut().grad += self.grad;
+                    }
+                    Operation::Mul(ref a, ref b) => {
+                        let a = a.upgrade().unwrap();
+                        let b = b.upgrade().unwrap();
+                        a.borrow_mut().grad += self.grad * b.borrow().data;
+                        b.borrow_mut().grad += self.grad * a.borrow().data;
+                    }
+                    Operation::Tanh(ref x) => {
+                        let x = x.upgrade().unwrap();
+                        let tanh = self.data.tanh();
+                        x.borrow_mut().grad += self.grad * (1.0 - tanh * tanh);
+                    }
+                    Operation::ReLU(ref x) => {
+                        let x = x.upgrade().unwrap();
+                        let relu = if self.data > 0.0 { 1.0 } else { 0.0 };
+                        x.borrow_mut().grad += self.grad * relu;
+                    }
+                    _ => {}
+                }
             }
-            _ => {}
+            None => {
+                // terminal node
+            }
         }
     }
 
 }
-
 
 impl From<f32> for _Unit {
     fn from(data: f32) -> _Unit {
@@ -91,33 +147,26 @@ impl Add for _Unit {
 
     fn add(self, other: _Unit) -> Self::Output {
         let mut output = _Unit::from(self.data + other.data);
-      //  output.children = Some(vec![self.to_unit_ref(), other.to_unit_ref()]);
-        output.operation = Some(Operation::Add(self.to_unit_ref(), other.to_unit_ref()));
+        let (self_rc, other_rc) = (self.to_unit(), other.to_unit());
+        output.operation = Some(Operation::Add(Rc::downgrade(&self_rc), Rc::downgrade(&other_rc)));
+        output.children = vec![self_rc, other_rc];
         output
     }
 
 }
-//
-// impl Sub for _Unit {
-//     type Output = _Unit;
-//
-//     fn sub(self, other: _Unit) -> Self::Output {
-//         _Unit::from(self.data - other.data)
-//     }
-// }
-//
-// impl Mul for _Unit {
-//     type Output = _Unit;
-//
-//     fn mul(self, other: _Unit) -> Self::Output {
-//         _Unit::from(self.data * other.data)
-//     }
-// }
-//
-// impl Div for _Unit {
-//     type Output = _Unit;
-//
-//     fn div(self, other: _Unit) -> Self::Output {
-//         _Unit::from(self.data / other.data)
-//     }
-// }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unit() {
+        let a = _Unit::from(1.0);
+        let b = _Unit::from(2.0);
+        let c = a + b;
+        assert_eq!(c.data, 3.0);
+    }
+
+
+}
