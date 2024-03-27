@@ -32,7 +32,11 @@ pub fn tanh(x: &Unit) -> Unit {
 
 pub fn backward(u: &Unit) {
     u.borrow_mut().grad = 1.0;
-    u.borrow_mut().self_back_propagation();
+    let  topo_n = rev_topological_sort_dfs(u);
+    //topo_n.reverse();
+    for bu in topo_n {
+        bu.upgrade().unwrap().borrow_mut().self_back_propagation();
+    }
 }
 
 
@@ -75,7 +79,7 @@ fn topological_sort(graph: &HashMap<usize, Vec<usize>>) -> Option<Vec<usize>> {
     }
 }
 
-fn topological_sort_dfs(u:&Unit) -> Vec<UnitRef> {
+fn rev_topological_sort_dfs(u:&Unit) -> Vec<UnitRef> {
     let mut visited: HashSet<usize> = HashSet::new();
     let mut sorted = Vec::new();
     let mut stack = VecDeque::new();
@@ -94,7 +98,7 @@ fn topological_sort_dfs(u:&Unit) -> Vec<UnitRef> {
         sorted.push(Rc::downgrade(&current));
     }
 
-    sorted.reverse();
+    //sorted.reverse();
     sorted
 }
 
@@ -140,8 +144,15 @@ mod tests {
         let d = new_unit(4.0); // 2
         let e = tanh(&c); // 0.99505475
         let f = add(&d, &e); // 2.99505475
-        let sorted = topological_sort_dfs(&f);
-        for s in sorted {
+        let mut sorted = rev_topological_sort_dfs(&f);
+        sorted.reverse();
+        for  s in sorted.iter() {
+            println!("{:}", s.upgrade().unwrap().borrow());
+        }
+
+        backward(&f);
+
+        for ref s in sorted {
             println!("{:}", s.upgrade().unwrap().borrow());
         }
     }

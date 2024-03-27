@@ -6,7 +6,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Debug)]
-pub(crate) enum Operation {
+pub enum Operation {
     Add(UnitRef, UnitRef),
     Mul(UnitRef, UnitRef),
     //Sub,
@@ -117,7 +117,7 @@ impl _Unit {
                     }
                     Operation::Tanh(ref x) => {
                         let x = x.upgrade().unwrap();
-                        let tanh = self.data.tanh();
+                        let tanh = x.borrow().data.tanh();
                         x.borrow_mut().grad += self.grad * (1.0 - tanh * tanh);
                     }
                     Operation::ReLU(ref x) => {
