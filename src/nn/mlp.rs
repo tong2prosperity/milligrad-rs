@@ -165,7 +165,7 @@ mod tests {
         println!("{:?}", output);
     }
 
-    
+
     //接下来需要测试一下MLP在只有部分节点时候，权重更新是否正常
     #[test]
     fn test_mlp() {
@@ -215,7 +215,6 @@ mod tests {
             let xs_calc = xs.clone();
             for x in xs_calc {
                 let o = mlp.eval(x).pop().unwrap();
-                println!("the unit has parameters {}", topological_sort_circle(&o).unwrap().len());
                 ypred.push(o);
             }
             //let ypred = xs.iter().flat_map(|x| mlp.eval(x)).collect::<Vec<Unit>>();
@@ -231,18 +230,17 @@ mod tests {
             }
             let parameters = mlp.parameters();
 
-            for i in 1..3 {
-                println!("{:?}", parameters[i].borrow());
-            }
-
             mlp.zero_grad();
-
-            for i in 1..3 {
+            for i in 1..4 {
                 println!("{:?}", parameters[i].borrow());
             }
-            backward(&loss);
 
-            println!("Before update iter {}, loss is {:?}, parameter size is {}", k, loss, parameters.len());
+            backward(&loss);
+            for i in 1..4 {
+                println!("{:?}", parameters[i].borrow());
+            }
+
+            println!("Before update iter {}, loss is {:?}", k, loss);
 
             // println!(" parameter length is {}", parameters.len());
             // for p in parameters.iter() {
