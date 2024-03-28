@@ -21,6 +21,29 @@ pub fn mul(l: &Unit, r: &Unit) -> Unit {
     output.to_unit()
 }
 
+
+pub fn pow(l: &Unit, r: f32) -> Unit {
+    let mut output = _Unit::new(l.borrow().data.powf(r));
+    let l_rc = Rc::downgrade(l);
+    output.operation = Some(Operation::Pow(l_rc, r));
+    output.children.push(l.clone());
+    output.to_unit()
+}
+
+pub fn sub(l: &Unit, r: &Unit) -> Unit {
+    let mut output = _Unit::new(l.borrow().data - r.borrow().data);
+    let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
+    output.operation = Some(Operation::Sub(l_rc, r_rc));
+    output.children.push(l.clone());
+    output.children.push(r.clone());
+    output.to_unit()
+}
+
+pub fn div(l: &Unit, r: &Unit) -> Unit {
+    assert!(r.borrow().data != 0.0);
+    mul(l, &pow(r, -1.0))
+}
+
 pub fn tanh(x: &Unit) -> Unit {
     let mut output = _Unit::new(x.borrow().data.tanh());
     let x_rc = Rc::downgrade(x);
@@ -30,12 +53,29 @@ pub fn tanh(x: &Unit) -> Unit {
 }
 
 
+pub fn relu(x: &Unit) -> Unit {
+    let mut output = _Unit::new(if x.borrow().data > 0.0 { x.borrow().data } else { 0.0 });
+    let x_rc = Rc::downgrade(x);
+    output.operation = Some(Operation::ReLU(x_rc));
+    output.children.push(x.clone());
+    output.to_unit()
+}
+
 pub fn backward(u: &Unit) {
     u.borrow_mut().grad = 1.0;
-    let  topo_n = rev_topological_sort_dfs(u);
-    //topo_n.reverse();
-    for bu in topo_n {
-        bu.upgrade().unwrap().borrow_mut().self_back_propagation();
+    let topo_n = topological_sort_circle(u);
+
+
+    if topo_n.is_none() {
+        println!("Cyclic graph detected");
+        return;
+    }
+    let mut topo_real = topo_n.unwrap();
+    topo_real.reverse();
+    println!("Topological sort done, found {}", topo_real.len());
+    for bu in topo_real.iter(){
+        //bu.upgrade().unwrap().borrow_mut().self_back_propagation();
+        bu.borrow_mut().self_back_propagation();
     }
 }
 
@@ -79,27 +119,78 @@ fn topological_sort(graph: &HashMap<usize, Vec<usize>>) -> Option<Vec<usize>> {
     }
 }
 
-fn rev_topological_sort_dfs(u:&Unit) -> Vec<UnitRef> {
+pub fn topological_sort_circle(node: &Unit) -> Option<Vec<Unit>> {
+    let mut visited = HashSet::new();
+    let mut stack = HashSet::new(); // Track nodes currently on the stack
+    let mut result = Vec::new();
+
+    if detect_cycle(node, &mut visited, &mut stack, &mut result) {
+        return None; // Graph contains cycle
+    }
+
+    Some(result)
+}
+
+fn detect_cycle(
+    node: &Unit,
+    visited: &mut HashSet<usize>,
+    stack: &mut HashSet<usize>,
+    result: &mut Vec<Unit>,
+) -> bool {
+    let id = node.borrow().id();
+
+    if stack.contains(&id) {
+        return true; // Cycle detected
+    }
+
+    if visited.contains(&id) {
+        return false; // Node already visited and no cycle detected
+    }
+
+    stack.insert(id); // Mark node as being on the stack
+    visited.insert(id);
+
+    for child in &node.borrow().children {
+        if detect_cycle(child, visited, stack, result) {
+            return true; // Propagate cycle detection
+        }
+    }
+
+    stack.remove(&id); // Remove node from stack after processing
+    result.push(node.clone()); // Add node to result after processing
+    false
+}
+
+fn rev_topological_sort_dfs(u:&Unit) -> Option<Vec<UnitRef>> {
     let mut visited: HashSet<usize> = HashSet::new();
     let mut sorted = Vec::new();
     let mut stack = VecDeque::new();
-
+    let mut on_stack = HashSet::new();
 
     stack.push_back(u.clone());
 
     while let Some(current) = stack.pop_back() {
-        if visited.contains(&current.borrow().id()) {
+        let id = current.borrow().id();
+
+        // if on_stack.contains(&id) {
+        //     // cycle detected
+        //     return None;
+        // }
+
+        if visited.contains(&id) {
             continue;
         }
-        visited.insert(current.borrow().id());
+        on_stack.insert(id);
+        visited.insert(id);
         for child in current.borrow().children.iter() {
             stack.push_back(child.clone());
+            // on_stack.insert(child.borrow().id());
         }
         sorted.push(Rc::downgrade(&current));
     }
 
     //sorted.reverse();
-    sorted
+    Some(sorted)
 }
 
 #[cfg(test)]
@@ -144,17 +235,39 @@ mod tests {
         let d = new_unit(4.0); // 2
         let e = tanh(&c); // 0.99505475
         let f = add(&d, &e); // 2.99505475
-        let mut sorted = rev_topological_sort_dfs(&f);
+        //let mut sorted = rev_topological_sort_dfs(&f).unwrap();
+        let mut sorted = topological_sort_circle(&f).unwrap();
         sorted.reverse();
         for  s in sorted.iter() {
-            println!("{:}", s.upgrade().unwrap().borrow());
+            println!("{:}", s.borrow());
         }
 
         backward(&f);
 
         for ref s in sorted {
-            println!("{:}", s.upgrade().unwrap().borrow());
+            println!("{:}", s.borrow());
         }
+    }
+
+    #[test]
+    fn test_cyclic_compute_graph() {
+        let a = new_unit(1.0);
+        let b = new_unit(2.0);
+        let c = add(&a, &b); // 3
+        let d = new_unit(4.0); // 2
+        let e = tanh(&c); // 0.99505475
+        let f = add(&d, &e); // 2.99505475
+        let g = add(&f, &f); // 5.9901095
+        let mut sorted = rev_topological_sort_dfs(&g);
+        assert!(sorted.is_none());
+    }
+
+    #[test]
+    fn float_pow() {
+        let a = new_unit(2.0);
+        let c = pow(&a, -1.0);
+        println!("{:?}", c.borrow());
+
     }
 
 }

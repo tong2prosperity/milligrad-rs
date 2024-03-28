@@ -1,5 +1,5 @@
 
-use std::ops::{Add, Mul, Sub, Div};
+use std::ops::{Add, Mul, Sub, Div, DivAssign};
 use super::*;
 use std::collections::HashMap;
 use std::fmt;
@@ -9,10 +9,11 @@ use std::hash::{Hash, Hasher};
 pub enum Operation {
     Add(UnitRef, UnitRef),
     Mul(UnitRef, UnitRef),
-    //Sub,
-    //Div,
+    Sub(UnitRef, UnitRef),
+    Div(UnitRef, UnitRef),
     Tanh(UnitRef),
     ReLU(UnitRef),
+    Pow(UnitRef, f32),
 }
 
 
@@ -21,8 +22,11 @@ impl fmt::Display for Operation {
         match self {
             Operation::Add(_, _) => write!(f, "Add"),
             Operation::Mul(_, _) => write!(f, "Mul"),
+            Operation::Sub(_, _) => write!(f, "Sub"),
+            Operation::Div(_, _) => write!(f, "Div"),
             Operation::Tanh(_) => write!(f, "Tanh"),
             Operation::ReLU(_) => write!(f, "ReLU"),
+            Operation::Pow(_, _) => write!(f, "Pow"),
         }
     }
 }
@@ -125,15 +129,25 @@ impl _Unit {
                         let relu = if self.data > 0.0 { 1.0 } else { 0.0 };
                         x.borrow_mut().grad += self.grad * relu;
                     }
+                    Operation::Pow(ref a, b) => {
+                        let a = a.upgrade().unwrap();
+                        let mut inner_a = a.borrow_mut();
+                        inner_a.grad += self.grad * b * inner_a.data.powf(b - 1.0);
+                    }
+                    Operation::Sub(ref a, ref b) => {
+                        let a = a.upgrade().unwrap();
+                        let b = b.upgrade().unwrap();
+                        a.borrow_mut().grad += self.grad;
+                        b.borrow_mut().grad -= self.grad;
+                    }
                     _ => {}
                 }
             }
             None => {
-                // terminal node
+                // terminal unit
             }
         }
     }
-
 }
 
 impl From<f32> for _Unit {
