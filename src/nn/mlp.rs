@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn test_neuron() {
         let n = Neuron::new(2, false);
-        let input = vec![new_unit(1.0), new_unit(2.0)];
+        let input = vec![Unit::from(1.0), Unit::from(2.0)];
         let output = n.eval(&input);
         println!("neuron  is {:?}", n);
         println!("{:?}", output);

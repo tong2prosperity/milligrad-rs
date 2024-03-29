@@ -5,31 +5,31 @@ use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-#[derive(Clone, Debug)]
-pub enum Operation {
-    Add(UnitRef, UnitRef),
-    Mul(UnitRef, UnitRef),
-    Sub(UnitRef, UnitRef),
-    Div(UnitRef, UnitRef),
-    Tanh(UnitRef),
-    ReLU(UnitRef),
-    Pow(UnitRef, f32),
-}
-
-
-impl fmt::Display for Operation {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Operation::Add(_, _) => write!(f, "Add"),
-            Operation::Mul(_, _) => write!(f, "Mul"),
-            Operation::Sub(_, _) => write!(f, "Sub"),
-            Operation::Div(_, _) => write!(f, "Div"),
-            Operation::Tanh(_) => write!(f, "Tanh"),
-            Operation::ReLU(_) => write!(f, "ReLU"),
-            Operation::Pow(_, _) => write!(f, "Pow"),
-        }
-    }
-}
+// #[derive(Clone, Debug)]
+// pub enum Operation {
+//     Add(Weak<RefCell<_Unit>>, Weak<RefCell<_Unit>>),
+//     Mul(Weak<RefCell<_Unit>>, Weak<RefCell<_Unit>>),
+//     Sub(Weak<RefCell<_Unit>>, Weak<RefCell<_Unit>>),
+//     Div(Weak<RefCell<_Unit>>, Weak<RefCell<_Unit>>),
+//     Tanh(Weak<RefCell<_Unit>>),
+//     ReLU(Weak<RefCell<_Unit>>),
+//     Pow(Weak<RefCell<_Unit>>, f32),
+// }
+// 
+// 
+// impl fmt::Display for Operation {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         match self {
+//             Operation::Add(_, _) => write!(f, "Add"),
+//             Operation::Mul(_, _) => write!(f, "Mul"),
+//             Operation::Sub(_, _) => write!(f, "Sub"),
+//             Operation::Div(_, _) => write!(f, "Div"),
+//             Operation::Tanh(_) => write!(f, "Tanh"),
+//             Operation::ReLU(_) => write!(f, "ReLU"),
+//             Operation::Pow(_, _) => write!(f, "Pow"),
+//         }
+//     }
+// }
 
 #[derive(Clone)]
 pub struct _Unit {
@@ -57,47 +57,59 @@ impl Hash for _Unit {
 
 impl fmt::Debug for _Unit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unit {{ data: {}, grad: {}, operation: {:?}, children_size: {} }}",
-               self.data, self.grad, self.operation, self.children.len())
+
+        f.debug_struct("_Unit")
+            .field("data", &self.data)
+            .field("grad", &self.grad)
+            .field("operation", &self.operation)
+            .field("children_size", &self.children.len())
+            .finish()
+
     }
 
 }
 
 impl fmt::Display for _Unit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unit {{ data: {}, grad: {}, operation: {:?}}}",
-               self.data, self.grad, self.operation)
+        write!(f, "Unit {{ data: {}, grad: {}, operation: {:?}, children_size: {} }}",
+               self.data, self.grad, self.operation, self.children.len())
     }
 }
 
 
 pub fn new_unit(data: f32) -> Unit {
-    Rc::new(RefCell::new(_Unit {
-        _id: rand::random(),
-        data,
-        grad: 0.0,
-        operation: None,
-        children: vec![],
-    }))
+    Unit::new(_Unit::from(data))
 }
 
 
 impl _Unit {
 
-    pub fn new(data: f32) -> _Unit {
+    pub fn new(data: f32, op: Option<Operation>, children: Vec<Unit>) -> _Unit {
+        _Unit{
+            _id: rand::random(),
+            data,
+            operation: op,
+            children,
+            grad: 0.0,
+        }
+    }
+
+    pub fn from(data: f32) -> _Unit {
         _Unit {
             _id: rand::random(),
             data,
             grad: 0.0,
             operation: None,
-            //back_propagation_fn: None,
             children: vec![],
         }
     }
+    
+    
 
-    pub fn to_unit(&self) -> Unit {
-        Rc::new(RefCell::new(self.clone()))
-    }
+    // pub fn to_unit(&self) -> Unit {
+    //     //Unit::new(self.clone())
+    //     //Rc::new(RefCell::new(self.clone()))
+    // }
 
     pub fn id(&self) -> usize {
         self._id
@@ -150,37 +162,16 @@ impl _Unit {
     }
 }
 
-impl From<f32> for _Unit {
-    fn from(data: f32) -> _Unit {
-        _Unit::new(data)
-    }
-}
-
-impl Add for _Unit {
-    type Output = _Unit;
-
-    fn add(self, other: _Unit) -> Self::Output {
-        let mut output = _Unit::from(self.data + other.data);
-        let (self_rc, other_rc) = (self.to_unit(), other.to_unit());
-        output.operation = Some(Operation::Add(Rc::downgrade(&self_rc), Rc::downgrade(&other_rc)));
-        output.children = vec![self_rc, other_rc];
-        output
-    }
-
-}
+// impl From<f32> for _Unit {
+//     fn from(data: f32) -> _Unit {
+//         _Unit::new(data)
+//     }
+// }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_unit() {
-        let a = _Unit::from(1.0);
-        let b = _Unit::from(2.0);
-        let c = a + b;
-        assert_eq!(c.data, 3.0);
-    }
 
 
 }

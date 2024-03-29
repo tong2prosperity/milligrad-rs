@@ -1,42 +1,45 @@
 use super::*;
 use super::unit::{new_unit, Operation};
+use super::Unit;
 
 
 
 pub fn add(l: &Unit, r: &Unit) -> Unit {
-    let mut output = _Unit::new(l.borrow().data + r.borrow().data);
+    let result = l.borrow().data + r.borrow().data;
     let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
-    output.operation = Some(Operation::Add(l_rc, r_rc));
-    output.children.push(l.clone());
-    output.children.push(r.clone());
-    output.to_unit()
+    let op = Some(Operation::Add(l_rc, r_rc));
+    Unit::new(_Unit::new(
+        result,
+        op,
+        vec![l.clone(), r.clone()]
+    ))
 }
 
 pub fn mul(l: &Unit, r: &Unit) -> Unit {
-    let mut output = _Unit::new(l.borrow().data * r.borrow().data);
+    let result = l.borrow().data * r.borrow().data;
     let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
-    output.operation = Some(Operation::Mul(l_rc, r_rc));
-    output.children.push(l.clone());
-    output.children.push(r.clone());
-    output.to_unit()
+    let op = Some(Operation::Mul(l_rc, r_rc));
+    Unit::new(_Unit::new(
+        result,
+        op,
+        vec![l.clone(), r.clone()]
+    ))
 }
 
 
 pub fn pow(l: &Unit, r: f32) -> Unit {
-    let mut output = _Unit::new(l.borrow().data.powf(r));
+    let result = l.borrow().data.powf(r);
     let l_rc = Rc::downgrade(l);
-    output.operation = Some(Operation::Pow(l_rc, r));
-    output.children.push(l.clone());
-    output.to_unit()
+    let op = Some(Operation::Pow(l_rc, r));
+    Unit::new(_Unit::new(
+        result,
+        op,
+        vec![l.clone()]
+    ))
 }
 
 pub fn sub(l: &Unit, r: &Unit) -> Unit {
-    let mut output = _Unit::new(l.borrow().data - r.borrow().data);
-    let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
-    output.operation = Some(Operation::Sub(l_rc, r_rc));
-    output.children.push(l.clone());
-    output.children.push(r.clone());
-    output.to_unit()
+    add(l, &mul(r, &new_unit(-1.0)))
 }
 
 pub fn div(l: &Unit, r: &Unit) -> Unit {
@@ -45,20 +48,37 @@ pub fn div(l: &Unit, r: &Unit) -> Unit {
 }
 
 pub fn tanh(x: &Unit) -> Unit {
-    let mut output = _Unit::new(x.borrow().data.tanh());
+    let result = x.borrow().data.tanh();
     let x_rc = Rc::downgrade(x);
-    output.operation = Some(Operation::Tanh(x_rc));
-    output.children.push(x.clone());
-    output.to_unit()
+    let op = Some(Operation::Tanh(x_rc));
+    Unit::new(_Unit::new(
+        result,
+        op,
+        vec![x.clone()]
+    ))
+    // let mut output = _Unit::new(x.borrow().data.tanh());
+    // let x_rc = Rc::downgrade(x);
+    // output.operation = Some(Operation::Tanh(x_rc));
+    // output.children.push(x.clone());
+    // output.to_unit()
 }
 
 
 pub fn relu(x: &Unit) -> Unit {
-    let mut output = _Unit::new(if x.borrow().data > 0.0 { x.borrow().data } else { 0.0 });
+    let result = if x.borrow().data > 0.0 { x.borrow().data } else { 0.0 };
     let x_rc = Rc::downgrade(x);
-    output.operation = Some(Operation::ReLU(x_rc));
-    output.children.push(x.clone());
-    output.to_unit()
+    let op = Some(Operation::ReLU(x_rc));
+    Unit::new(_Unit::new(
+        result,
+        op,
+        vec![x.clone()]
+    ))
+    
+    // let mut output = _Unit::new(if x.borrow().data > 0.0 { x.borrow().data } else { 0.0 });
+    // let x_rc = Rc::downgrade(x);
+    // output.operation = Some(Operation::ReLU(x_rc));
+    // output.children.push(x.clone());
+    // output.to_unit()
 }
 
 pub fn backward(u: &Unit) {
@@ -161,7 +181,7 @@ fn detect_cycle(
     false
 }
 
-fn rev_topological_sort_dfs(u:&Unit) -> Option<Vec<UnitRef>> {
+fn rev_topological_sort_dfs(u:&Unit) -> Option<Vec<Unit>> {
     let mut visited: HashSet<usize> = HashSet::new();
     let mut sorted = Vec::new();
     let mut stack = VecDeque::new();
@@ -186,7 +206,7 @@ fn rev_topological_sort_dfs(u:&Unit) -> Option<Vec<UnitRef>> {
             stack.push_back(child.clone());
             // on_stack.insert(child.borrow().id());
         }
-        sorted.push(Rc::downgrade(&current));
+        sorted.push(current.clone());
     }
 
     //sorted.reverse();
