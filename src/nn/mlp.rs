@@ -231,16 +231,16 @@ mod tests {
             let parameters = mlp.parameters();
 
             mlp.zero_grad();
-            for i in 1..4 {
-                println!("{:?}", parameters[i].borrow());
-            }
+            // for i in 1..4 {
+            //     println!("{:?}", parameters[i].borrow());
+            // }
 
             backward(&loss);
-            for i in 1..4 {
-                println!("{:?}", parameters[i].borrow());
-            }
+            // for i in 1..4 {
+            //     println!("{:?}", parameters[i].borrow());
+            // }
 
-            println!("Before update iter {}, loss is {:?}", k, loss);
+            println!("Before update iter {}, loss is {:?}", k, loss.borrow().data);
 
             // println!(" parameter length is {}", parameters.len());
             // for p in parameters.iter() {
@@ -249,7 +249,7 @@ mod tests {
 
             for p in parameters.iter() {
                 let mut p = p.borrow_mut();
-                p.data += -0.1 * p.grad;
+                p.data += -0.05 * p.grad;
             }
 
          //   println!("After update iter {}, loss is {:?}", k, loss);

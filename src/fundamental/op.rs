@@ -1,13 +1,13 @@
 use super::*;
-use super::unit::{new_unit, Operation};
+use super::unit::{new_unit};
 use super::Unit;
 
 
 
 pub fn add(l: &Unit, r: &Unit) -> Unit {
     let result = l.borrow().data + r.borrow().data;
-    let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
-    let op = Some(Operation::Add(l_rc, r_rc));
+    //let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
+    let op = Some(Operation::Add(l.clone(), r.clone()));
     Unit::new(_Unit::new(
         result,
         op,
@@ -17,8 +17,8 @@ pub fn add(l: &Unit, r: &Unit) -> Unit {
 
 pub fn mul(l: &Unit, r: &Unit) -> Unit {
     let result = l.borrow().data * r.borrow().data;
-    let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
-    let op = Some(Operation::Mul(l_rc, r_rc));
+    //let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
+    let op = Some(Operation::Mul(l.clone(), r.clone()));
     Unit::new(_Unit::new(
         result,
         op,
@@ -29,8 +29,8 @@ pub fn mul(l: &Unit, r: &Unit) -> Unit {
 
 pub fn pow(l: &Unit, r: f32) -> Unit {
     let result = l.borrow().data.powf(r);
-    let l_rc = Rc::downgrade(l);
-    let op = Some(Operation::Pow(l_rc, r));
+    //let l_rc = Rc::downgrade(l);
+    let op = Some(Operation::Pow(l.clone(), r));
     Unit::new(_Unit::new(
         result,
         op,
@@ -49,8 +49,8 @@ pub fn div(l: &Unit, r: &Unit) -> Unit {
 
 pub fn tanh(x: &Unit) -> Unit {
     let result = x.borrow().data.tanh();
-    let x_rc = Rc::downgrade(x);
-    let op = Some(Operation::Tanh(x_rc));
+    //let x_rc = Rc::downgrade(x);
+    let op = Some(Operation::Tanh(x.clone()));
     Unit::new(_Unit::new(
         result,
         op,
@@ -66,8 +66,8 @@ pub fn tanh(x: &Unit) -> Unit {
 
 pub fn relu(x: &Unit) -> Unit {
     let result = if x.borrow().data > 0.0 { x.borrow().data } else { 0.0 };
-    let x_rc = Rc::downgrade(x);
-    let op = Some(Operation::ReLU(x_rc));
+    //let x_rc = Rc::downgrade(x);
+    let op = Some(Operation::ReLU(x.clone()));
     Unit::new(_Unit::new(
         result,
         op,
@@ -216,7 +216,6 @@ fn rev_topological_sort_dfs(u:&Unit) -> Option<Vec<Unit>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::unit::Operation;
 
 
     #[test]

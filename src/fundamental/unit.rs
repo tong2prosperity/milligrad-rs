@@ -120,35 +120,35 @@ impl _Unit {
             Some(ref op) => {
                 match op {
                     Operation::Add(ref a, ref b) => {
-                        let a = a.upgrade().unwrap();
-                        let b = b.upgrade().unwrap();
+                        // let a = a.upgrade().unwrap();
+                        // let b = b.upgrade().unwrap();
                         a.borrow_mut().grad += self.grad;
                         b.borrow_mut().grad += self.grad;
                     }
                     Operation::Mul(ref a, ref b) => {
-                        let a = a.upgrade().unwrap();
-                        let b = b.upgrade().unwrap();
+                        // let a = a.upgrade().unwrap();
+                        // let b = b.upgrade().unwrap();
                         a.borrow_mut().grad += self.grad * b.borrow().data;
                         b.borrow_mut().grad += self.grad * a.borrow().data;
                     }
                     Operation::Tanh(ref x) => {
-                        let x = x.upgrade().unwrap();
+                        // let x = x.upgrade().unwrap();
                         let tanh = x.borrow().data.tanh();
                         x.borrow_mut().grad += self.grad * (1.0 - tanh * tanh);
                     }
                     Operation::ReLU(ref x) => {
-                        let x = x.upgrade().unwrap();
+                        // let x = x.upgrade().unwrap();
                         let relu = if self.data > 0.0 { 1.0 } else { 0.0 };
                         x.borrow_mut().grad += self.grad * relu;
                     }
                     Operation::Pow(ref a, b) => {
-                        let a = a.upgrade().unwrap();
+                        // let a = a.upgrade().unwrap();
                         let mut inner_a = a.borrow_mut();
                         inner_a.grad += self.grad * b * inner_a.data.powf(b - 1.0);
                     }
                     Operation::Sub(ref a, ref b) => {
-                        let a = a.upgrade().unwrap();
-                        let b = b.upgrade().unwrap();
+                        // let a = a.upgrade().unwrap();
+                        // let b = b.upgrade().unwrap();
                         a.borrow_mut().grad += self.grad;
                         b.borrow_mut().grad -= self.grad;
                     }
