@@ -10,6 +10,6 @@ pub trait Zeroable {
             //p.borrow_mut().grad = 0.0;
         }
     }
-    
+
     fn parameters(&self) -> Vec<Unit>;
 }

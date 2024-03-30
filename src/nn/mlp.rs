@@ -1,9 +1,9 @@
-use std::iter::zip;
-use crate::fundamental::Unit;
 use super::*;
-use rand::distributions::{Uniform, Distribution};
 use crate::fundamental::op::*;
 use crate::fundamental::unit::new_unit;
+use crate::fundamental::Unit;
+use rand::distributions::{Distribution, Uniform};
+use std::iter::zip;
 
 #[derive(Debug)]
 pub struct Neuron {
@@ -55,7 +55,6 @@ impl Neuron {
 //     }
 // }
 
-
 impl Zeroable for Neuron {
     fn parameters(&self) -> Vec<Unit> {
         let mut params = Vec::new();
@@ -78,9 +77,7 @@ impl Layer {
         for _ in 0..output {
             neurons.push(Neuron::new(input, activation));
         }
-        Layer {
-            neurons,
-        }
+        Layer { neurons }
     }
 
     pub fn eval(&self, input: &Vec<Unit>) -> Vec<Unit> {
@@ -102,7 +99,6 @@ impl Zeroable for Layer {
     }
 }
 
-
 pub struct MLP {
     pub layers: Vec<Layer>,
 }
@@ -116,9 +112,7 @@ impl MLP {
             input = h;
         }
         layers.push(Layer::new(input, output, false));
-        MLP {
-            layers,
-        }
+        MLP { layers }
     }
 
     pub fn eval(&self, input: Vec<Unit>) -> Vec<Unit> {
@@ -140,7 +134,6 @@ impl Zeroable for MLP {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,7 +147,6 @@ mod tests {
         println!("{:?}", output);
     }
 
-
     #[test]
     fn test_layer() {
         let l = Layer::new(4, 1, false);
@@ -164,7 +156,6 @@ mod tests {
         println!("{:?}", output);
     }
 
-
     //接下来需要测试一下MLP在只有部分节点时候，权重更新是否正常
     #[test]
     fn test_mlp() {
@@ -173,9 +164,12 @@ mod tests {
         let output = mlp.eval(input);
         let paran_num = mlp.parameters().len();
 
-        println!("mlp output {:?}, mlp parameter size is {}", output, paran_num);
+        println!(
+            "mlp output {:?}, mlp parameter size is {}",
+            output, paran_num
+        );
     }
-    
+
     #[test]
     fn test_debug_simple_mlp() {
         let mlp = MLP::new(1, vec![2], 1);
@@ -183,10 +177,10 @@ mod tests {
         for p in parameters.iter() {
             println!("{:?}", p.borrow());
         }
-        
+
         let x = vec![new_unit(1.0), new_unit(2.0)];
         let y = vec![new_unit(2.0), new_unit(4.0)];
-        
+
         let ypred = mlp.eval(x);
         //println!("ypred is {}",ypred);
     }
@@ -201,13 +195,7 @@ mod tests {
             vec![new_unit(1.0), new_unit(1.0), new_unit(-1.0)],
         ];
 
-        let ys = vec![
-            new_unit(1.0),
-            new_unit(-1.0),
-            new_unit(-1.0),
-            new_unit(1.0),
-        ];
-
+        let ys = vec![new_unit(1.0), new_unit(-1.0), new_unit(-1.0), new_unit(1.0)];
 
         for k in 0..20 {
             let mut ypred = Vec::new();
@@ -224,7 +212,7 @@ mod tests {
             let mut loss = Unit::from(0.0);
             for i in 0..ypred.len() {
                 //let s = sub(&ypred[i], &ys[i]);
-                let s= &ypred[i] - &ys[i];
+                let s = &ypred[i] - &ys[i];
                 let p = pow(&s, 2.0);
                 loss = &loss + &p;
             }
@@ -252,7 +240,7 @@ mod tests {
                 p.data += -0.05 * p.grad;
             }
 
-         //   println!("After update iter {}, loss is {:?}", k, loss);
+            //   println!("After update iter {}, loss is {:?}", k, loss);
 
             // for p in parameters {
             //     println!("{:?}", p.borrow());

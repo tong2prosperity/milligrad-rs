@@ -1,21 +1,20 @@
 use std::cell::{Ref, RefCell};
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::ops::{Add, Deref, Neg, Sub, Mul, Div};
+use std::ops::{Add, Deref, Div, Mul, Neg, Sub};
 use std::rc::{Rc, Weak};
 
-use op::{add, mul, div, sub, pow, tanh, relu};
+use op::{add, div, mul, pow, relu, sub, tanh};
 
 pub mod autograd;
-pub mod unit;
 pub mod op;
+pub mod unit;
 
 use unit::_Unit;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Unit(Rc<RefCell<_Unit>>);
 //pub struct UnitRef(Weak<RefCell<_Unit>>);
-
 
 #[derive(Clone, Debug)]
 pub enum Operation {
@@ -27,7 +26,6 @@ pub enum Operation {
     ReLU(Unit),
     Pow(Unit, f32),
 }
-
 
 impl fmt::Display for Operation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -43,7 +41,6 @@ impl fmt::Display for Operation {
     }
 }
 
-
 impl Unit {
     pub fn from<T>(t: T) -> Unit
     where
@@ -52,30 +49,26 @@ impl Unit {
         t.into()
     }
 
-
     fn new(u: _Unit) -> Unit {
         Unit(Rc::new(RefCell::new(u)))
     }
-    
+
     pub fn data(&self) -> f32 {
         self.borrow().data
     }
-    
+
     pub fn grad(&self) -> f32 {
         self.borrow().grad
     }
-    
+
     pub fn zero_grad(&self) {
         self.borrow_mut().grad = 0.0;
     }
-    
+
     pub fn adjust(&self, learning_rate: f32) {
         let mut u = self.borrow_mut();
         u.data += learning_rate * u.grad;
     }
-    
-    
-
 }
 
 impl Hash for Unit {

@@ -1,41 +1,26 @@
-use super::*;
-use super::unit::{new_unit};
+use super::unit::new_unit;
 use super::Unit;
-
-
+use super::*;
 
 pub fn add(l: &Unit, r: &Unit) -> Unit {
     let result = l.borrow().data + r.borrow().data;
     //let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
     let op = Some(Operation::Add(l.clone(), r.clone()));
-    Unit::new(_Unit::new(
-        result,
-        op,
-        vec![l.clone(), r.clone()]
-    ))
+    Unit::new(_Unit::new(result, op, vec![l.clone(), r.clone()]))
 }
 
 pub fn mul(l: &Unit, r: &Unit) -> Unit {
     let result = l.borrow().data * r.borrow().data;
     //let (l_rc, r_rc) = (Rc::downgrade(l), Rc::downgrade(r));
     let op = Some(Operation::Mul(l.clone(), r.clone()));
-    Unit::new(_Unit::new(
-        result,
-        op,
-        vec![l.clone(), r.clone()]
-    ))
+    Unit::new(_Unit::new(result, op, vec![l.clone(), r.clone()]))
 }
-
 
 pub fn pow(l: &Unit, r: f32) -> Unit {
     let result = l.borrow().data.powf(r);
     //let l_rc = Rc::downgrade(l);
     let op = Some(Operation::Pow(l.clone(), r));
-    Unit::new(_Unit::new(
-        result,
-        op,
-        vec![l.clone()]
-    ))
+    Unit::new(_Unit::new(result, op, vec![l.clone()]))
 }
 
 pub fn sub(l: &Unit, r: &Unit) -> Unit {
@@ -51,11 +36,7 @@ pub fn tanh(x: &Unit) -> Unit {
     let result = x.borrow().data.tanh();
     //let x_rc = Rc::downgrade(x);
     let op = Some(Operation::Tanh(x.clone()));
-    Unit::new(_Unit::new(
-        result,
-        op,
-        vec![x.clone()]
-    ))
+    Unit::new(_Unit::new(result, op, vec![x.clone()]))
     // let mut output = _Unit::new(x.borrow().data.tanh());
     // let x_rc = Rc::downgrade(x);
     // output.operation = Some(Operation::Tanh(x_rc));
@@ -63,17 +44,16 @@ pub fn tanh(x: &Unit) -> Unit {
     // output.to_unit()
 }
 
-
 pub fn relu(x: &Unit) -> Unit {
-    let result = if x.borrow().data > 0.0 { x.borrow().data } else { 0.0 };
+    let result = if x.borrow().data > 0.0 {
+        x.borrow().data
+    } else {
+        0.0
+    };
     //let x_rc = Rc::downgrade(x);
     let op = Some(Operation::ReLU(x.clone()));
-    Unit::new(_Unit::new(
-        result,
-        op,
-        vec![x.clone()]
-    ))
-    
+    Unit::new(_Unit::new(result, op, vec![x.clone()]))
+
     // let mut output = _Unit::new(if x.borrow().data > 0.0 { x.borrow().data } else { 0.0 });
     // let x_rc = Rc::downgrade(x);
     // output.operation = Some(Operation::ReLU(x_rc));
@@ -85,7 +65,6 @@ pub fn backward(u: &Unit) {
     u.borrow_mut().grad = 1.0;
     let topo_n = topological_sort_circle(u);
 
-
     if topo_n.is_none() {
         println!("Cyclic graph detected");
         return;
@@ -93,12 +72,11 @@ pub fn backward(u: &Unit) {
     let mut topo_real = topo_n.unwrap();
     topo_real.reverse();
     println!("Topological sort done, found {}", topo_real.len());
-    for bu in topo_real.iter(){
+    for bu in topo_real.iter() {
         //bu.upgrade().unwrap().borrow_mut().self_back_propagation();
         bu.borrow_mut().self_back_propagation();
     }
 }
-
 
 use std::collections::{HashMap, HashSet, VecDeque};
 fn topological_sort(graph: &HashMap<usize, Vec<usize>>) -> Option<Vec<usize>> {
@@ -181,7 +159,7 @@ fn detect_cycle(
     false
 }
 
-fn rev_topological_sort_dfs(u:&Unit) -> Option<Vec<Unit>> {
+fn rev_topological_sort_dfs(u: &Unit) -> Option<Vec<Unit>> {
     let mut visited: HashSet<usize> = HashSet::new();
     let mut sorted = Vec::new();
     let mut stack = VecDeque::new();
@@ -217,7 +195,6 @@ fn rev_topological_sort_dfs(u:&Unit) -> Option<Vec<Unit>> {
 mod tests {
     use super::*;
 
-
     #[test]
     fn test_back_propagation() {
         let a = new_unit(1.0);
@@ -234,12 +211,10 @@ mod tests {
 
     #[test]
     fn test_topo() {
-        let graph = vec![
-            (2, vec![3, 0, 1]),
-            (3, vec![1]),
-            (0, vec![1]),
-            (1, vec![4]),
-        ].iter().cloned().collect::<HashMap<_, _>>();
+        let graph = vec![(2, vec![3, 0, 1]), (3, vec![1]), (0, vec![1]), (1, vec![4])]
+            .iter()
+            .cloned()
+            .collect::<HashMap<_, _>>();
         match topological_sort(&graph) {
             Some(sorted) => println!("Topologically sorted: {:?}", sorted),
             None => println!("No topological sort exists due to cycles in the graph."),
@@ -254,10 +229,10 @@ mod tests {
         let d = new_unit(4.0); // 2
         let e = tanh(&c); // 0.99505475
         let f = add(&d, &e); // 2.99505475
-        //let mut sorted = rev_topological_sort_dfs(&f).unwrap();
+                             //let mut sorted = rev_topological_sort_dfs(&f).unwrap();
         let mut sorted = topological_sort_circle(&f).unwrap();
         sorted.reverse();
-        for  s in sorted.iter() {
+        for s in sorted.iter() {
             println!("{:}", s.borrow());
         }
 
@@ -277,7 +252,7 @@ mod tests {
         let e = tanh(&c); // 0.99505475
         let f = add(&d, &e); // 2.99505475
         let g = add(&f, &f); // 5.9901095
-        let  sorted = rev_topological_sort_dfs(&g);
+        let sorted = rev_topological_sort_dfs(&g);
         assert!(sorted.is_none());
     }
 
@@ -286,7 +261,5 @@ mod tests {
         let a = new_unit(2.0);
         let c = pow(&a, -1.0);
         println!("{:?}", c.borrow());
-
     }
-
 }
