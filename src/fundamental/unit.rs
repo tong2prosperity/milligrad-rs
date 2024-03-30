@@ -15,8 +15,8 @@ use std::hash::{Hash, Hasher};
 //     ReLU(Weak<RefCell<_Unit>>),
 //     Pow(Weak<RefCell<_Unit>>, f32),
 // }
-// 
-// 
+//
+//
 // impl fmt::Display for Operation {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 //         match self {
@@ -167,11 +167,3 @@ impl _Unit {
 //         _Unit::new(data)
 //     }
 // }
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-
-}

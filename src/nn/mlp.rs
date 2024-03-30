@@ -143,7 +143,6 @@ impl Zeroable for MLP {
 
 #[cfg(test)]
 mod tests {
-    use crate::fundamental::op::sub;
     use super::*;
 
     #[test]
@@ -222,11 +221,12 @@ mod tests {
             //     pow(&sub(p, t), 2.0)
             // }).collect::<Vec<_>>();
 
-            let mut loss = new_unit(0.0);
+            let mut loss = Unit::from(0.0);
             for i in 0..ypred.len() {
-                let s = sub(&ypred[i], &ys[i]);
+                //let s = sub(&ypred[i], &ys[i]);
+                let s= &ypred[i] - &ys[i];
                 let p = pow(&s, 2.0);
-                loss = add(&loss, &p);
+                loss = &loss + &p;
             }
             let parameters = mlp.parameters();
 

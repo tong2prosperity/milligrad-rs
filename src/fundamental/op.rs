@@ -222,7 +222,7 @@ mod tests {
     fn test_back_propagation() {
         let a = new_unit(1.0);
         let b = new_unit(2.0);
-        let mut c = add(&a, &b);
+        let c = add(&a, &b);
         c.borrow_mut().grad = 1.0;
         c.borrow_mut().self_back_propagation();
         println!("{:?}", c.borrow());
@@ -277,7 +277,7 @@ mod tests {
         let e = tanh(&c); // 0.99505475
         let f = add(&d, &e); // 2.99505475
         let g = add(&f, &f); // 5.9901095
-        let mut sorted = rev_topological_sort_dfs(&g);
+        let  sorted = rev_topological_sort_dfs(&g);
         assert!(sorted.is_none());
     }
 
