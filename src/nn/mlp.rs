@@ -1,3 +1,4 @@
+use std::fmt;
 use super::*;
 use crate::fundamental::op::*;
 use crate::fundamental::unit::new_unit;
@@ -40,20 +41,6 @@ impl Neuron {
         sum
     }
 }
-
-// impl FnMut<(Vec<Unit>, )> for Neuron {
-//     extern "rust-call" fn call_mut(&mut self, args: (Vec<Unit>, )) -> Self::Output {
-//         todo!()
-//     }
-// }
-//
-// impl FnOnce<(Vec<Unit>, )> for Neuron {
-//     type Output = ();
-//
-//     extern "rust-call" fn call_once(self, args: (Vec<Unit>, )) -> Self::Output {
-//         todo!()
-//     }
-// }
 
 impl Zeroable for Neuron {
     fn parameters(&self) -> Vec<Unit> {
@@ -134,6 +121,12 @@ impl Zeroable for MLP {
     }
 }
 
+impl fmt::Display for MLP {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "MLP {{ layers: {} }}", self.layers.len())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,8 +158,8 @@ mod tests {
         let paran_num = mlp.parameters().len();
 
         println!(
-            "mlp output {:?}, mlp parameter size is {}",
-            output, paran_num
+            "mlp output {}, mlp parameter size is {}",
+            &output[0], paran_num
         );
     }
 
@@ -179,9 +172,9 @@ mod tests {
         }
 
         let x = vec![new_unit(1.0), new_unit(2.0)];
-        let y = vec![new_unit(2.0), new_unit(4.0)];
+        let _y = vec![new_unit(2.0), new_unit(4.0)];
 
-        let ypred = mlp.eval(x);
+        let _ypred = mlp.eval(x);
         //println!("ypred is {}",ypred);
     }
 

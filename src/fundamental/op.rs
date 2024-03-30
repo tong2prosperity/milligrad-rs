@@ -34,14 +34,8 @@ pub fn div(l: &Unit, r: &Unit) -> Unit {
 
 pub fn tanh(x: &Unit) -> Unit {
     let result = x.borrow().data.tanh();
-    //let x_rc = Rc::downgrade(x);
     let op = Some(Operation::Tanh(x.clone()));
     Unit::new(_Unit::new(result, op, vec![x.clone()]))
-    // let mut output = _Unit::new(x.borrow().data.tanh());
-    // let x_rc = Rc::downgrade(x);
-    // output.operation = Some(Operation::Tanh(x_rc));
-    // output.children.push(x.clone());
-    // output.to_unit()
 }
 
 pub fn relu(x: &Unit) -> Unit {
@@ -50,15 +44,8 @@ pub fn relu(x: &Unit) -> Unit {
     } else {
         0.0
     };
-    //let x_rc = Rc::downgrade(x);
     let op = Some(Operation::ReLU(x.clone()));
     Unit::new(_Unit::new(result, op, vec![x.clone()]))
-
-    // let mut output = _Unit::new(if x.borrow().data > 0.0 { x.borrow().data } else { 0.0 });
-    // let x_rc = Rc::downgrade(x);
-    // output.operation = Some(Operation::ReLU(x_rc));
-    // output.children.push(x.clone());
-    // output.to_unit()
 }
 
 pub fn backward(u: &Unit) {
@@ -73,7 +60,6 @@ pub fn backward(u: &Unit) {
     topo_real.reverse();
     println!("Topological sort done, found {}", topo_real.len());
     for bu in topo_real.iter() {
-        //bu.upgrade().unwrap().borrow_mut().self_back_propagation();
         bu.borrow_mut().self_back_propagation();
     }
 }
@@ -207,7 +193,7 @@ mod tests {
         assert_eq!(b.borrow().grad, 1.0);
     }
 
-    use std::collections::{HashMap, HashSet, VecDeque};
+    use std::collections::{HashMap};
 
     #[test]
     fn test_topo() {

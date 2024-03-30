@@ -1,12 +1,10 @@
-use std::cell::{Ref, RefCell};
+use std::cell::{RefCell};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, Deref, Div, Mul, Neg, Sub};
-use std::rc::{Rc, Weak};
+use std::rc::{Rc};
 
-use op::{add, div, mul, pow, relu, sub, tanh};
-
-pub mod autograd;
+use op::{add, div, mul};
 pub mod op;
 pub mod unit;
 
@@ -16,7 +14,7 @@ use unit::_Unit;
 pub struct Unit(Rc<RefCell<_Unit>>);
 //pub struct UnitRef(Weak<RefCell<_Unit>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Operation {
     Add(Unit, Unit),
     Mul(Unit, Unit),
@@ -25,6 +23,20 @@ pub enum Operation {
     Tanh(Unit),
     ReLU(Unit),
     Pow(Unit, f32),
+}
+
+impl fmt::Debug for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Operation::Add(ref l, ref r) => write!(f, "Add {:?} {:?}", l.borrow().data, r.borrow().data),
+            Operation::Mul(ref l, ref r) => write!(f, "Mul {:?} {:?}", l.borrow().data, r.borrow().data),
+            Operation::Sub(ref l, ref r) => write!(f, "Sub {:?} {:?}", l.borrow().data, r.borrow().data),
+            Operation::Div(ref l, ref r) => write!(f, "Div {:?} {:?}", l.borrow().data, r.borrow().data),
+            Operation::Tanh(ref x) => write!(f, "Tanh {:?}", x.borrow().data),
+            Operation::ReLU(ref x) => write!(f, "ReLU {:?}", x.borrow().data),
+            Operation::Pow(ref x, ref r) => write!(f, "Pow {:?} {:?}", x.borrow().data, r),
+        }
+    }
 }
 
 impl fmt::Display for Operation {
@@ -167,5 +179,18 @@ impl<'a, 'b> Div<&'b Unit> for &'a Unit {
 
     fn div(self, other: &'b Unit) -> Self::Output {
         div(self, other)
+    }
+}
+
+impl fmt::Display for Unit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Unit {{ data: {}, grad: {}, operation: {:?}, children_size: {} }}",
+            self.borrow().data,
+            self.borrow().grad,
+            self.borrow().operation,
+            self.borrow().children.len()
+        )
     }
 }
